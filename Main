@@ -1,5 +1,22 @@
-int main(void) {
+#include <stdlib.h>
+#include <stdio.h>
+#include "Instalacao.h"
+#include "Tarifas.h"
+#include "Estacionamento.h"
+#include <locale.h>
+#include "Util.h"
 
+int lerconfig(Confparque *config);
+int gravarconfig(const Confparque *config);
+int modificatarifa(Tarifa tarifas[], int *numtarifas);
+int lertarifas(Tarifa tarifas[], int *numtarifas);
+void mostrarTabela(Tarifa tarifas[], int n);
+int guardartarifas(Tarifa tarifas[], int numtarifas);
+int personalizapp(Confparque config);
+void mostrarMenu(void);
+
+int main(void) {
+    
     setlocale(LC_ALL, "Portuguese");
     
     FILE *F1=NULL;
@@ -10,5 +27,8 @@ int main(void) {
     }
     else{
         mostrarMenu();
+        
     }
+    
+    
 }
