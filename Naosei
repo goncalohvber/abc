@@ -1,0 +1,300 @@
+int matriz[5][26][50]
+que piso deseja ver? 1 2 3 4 5
+case 1:
+for (i=1, i<=filamax, i++)
+    for j=1, j<=colunamax, j++)
+        case livre
+print traço
+        case ocupado
+print "X"
+   
+
+
+    printf("Que tarifa deseja modificar?\n1:CT1\n2:CT2\n3:CT3\n4:CT4\n");
+    printf("Opção: ");
+    scanf("%d", )
+
+
+int tarifariopadrao(void) {
+    FILE *f = fopen("Tarifario.txt", "w");
+    if (f==NULL) {
+        return 0;
+    }
+    fprintf(f, "H\tCT1\t08:00\t22:00\t0.60\n");
+    fprintf(f, "H\tCT2\t22:00\t08:00\t0.30\n");
+    fprintf(f, "D\tCT3\t00:00\t00:00\t8.00\n");
+    fprintf(f, "D\tCT4\t00:00\t00:00\t6.00\n");
+    fclose(f);
+    return 1;
+}
+
+int lertarifas(Tarifa tarifas[], int *numtarifas) {
+    // Validar parâmetros
+    if (tarifas == NULL || numtarifas == NULL) {
+        return 0;
+    }
+    
+    FILE *f = fopen("Tarifario.txt", "r");
+    
+    // --- CORREÇÃO AQUI ---
+    if (f == NULL) {
+        printf("Tarifario.txt não encontrado. A criar padrão...\n");
+        
+        // 1. Chamar a função com ()
+        // 2. Se falhar a criar, retorna 0
+        if (!tarifariopadrao()) {
+            printf("Erro ao criar ficheiro padrão.\n");
+            return 0;
+        }
+        
+        // 3. IMPORTANTE: Tentar abrir novamente o ficheiro agora que foi criado
+        f = fopen("Tarifario.txt", "r");
+        if (f == NULL) {
+            printf("Não foi possível abrir o ficheiro após criação.\n");
+            return 0;
+        }
+    }
+    // ---------------------
+
+    // Inicializar contador
+    *numtarifas = 0;
+    char linha[200];
+    
+    // Ler linha por linha
+    while (fgets(linha, sizeof(linha), f) != NULL && *numtarifas < MAX_TARIFAS) {
+        
+        // Remover \n do final
+        linha[strcspn(linha, "\n")] = 0;
+        
+        // Ignorar linhas vazias
+        if (strlen(linha) == 0) {
+            continue;
+        }
+        
+        char tipo;
+        char codigo[10];
+        int horaInf, minInf, horaSup, minSup;
+        float valor;
+        
+        // Fazer parse da linha
+        // Nota: O teu formato exige TABULAÇÕES (\t). Se o ficheiro tiver espaços, falha.
+        int resultado = sscanf(linha, "%c\t%[^\t]\t%d:%d\t%d:%d\t%f", &tipo, codigo, &horaInf, &minInf, &horaSup, &minSup, &valor);
+        
+        if (resultado != 7) {
+            // Dica de debug: mostrar a linha que falhou
+            printf("Aviso: Linha mal formatada: '%s'\n", linha);
+            continue;
+        }
+        
+        if (tipo != 'H' && tipo != 'D') {
+            printf("Aviso: Tipo '%c' inválido (ignorada)\n", tipo);
+            continue;
+        }
+        
+        if (valor <= 0) {
+            printf("Aviso: Valor %.2f inválido (ignorada)\n", valor);
+            continue;
+        }
+        
+        tarifas[*numtarifas].tipo = tipo;
+        strcpy(tarifas[*numtarifas].codigo, codigo);
+        tarifas[*numtarifas].horaInf = horaInf;
+        tarifas[*numtarifas].minInf = minInf;
+        tarifas[*numtarifas].horaSup = horaSup;
+        tarifas[*numtarifas].minSup = minSup;
+        tarifas[*numtarifas].valor = valor;
+        
+        (*numtarifas)++;
+    }
+    
+    fclose(f);
+    
+    if (*numtarifas == 0) {
+        printf("Erro: Nenhuma tarifa válida foi carregada\n");
+        return 0;
+    }
+    
+    printf("%d tarifa(s) carregada(s) com sucesso.\n", *numtarifas);
+    return 1;
+}
+
+int tarifariopadrao(void) { //A função tarifariopadrao é utilizada para, ao abrir a aplicação pela primeira vez, ja estar os precos padrao definidos
+    FILE *f = fopen("Tarifario.txt", "w"); //Abrir o ficheiroi para escrita
+    if (f==NULL) {
+        return 0;
+    }
+    fprintf(f, "H\tCT1\t08:00\t22:00\t0.60\n");
+    fprintf(f, "H\tCT2\t22:00\t08:00\t0.30\n");
+    fprintf(f, "D\tCT3\t00:00\t00:00\t8.00\n");
+    fprintf(f, "D\tCT4\t00:00\t00:00\t6.00\n");
+    fclose(f);
+    return 1;
+}
+
+        printf("Tarifario.txt não encontrado. A criar padrão...\n");
+        
+        if (!mostrarTabela()) {
+            printf("Erro ao criar ficheiro padrão.\n");
+            return 0;
+        }
+        
+int tarifariopadrao(void);
+
+
+
+
+
+
+
+
+
+int personalizapp(Confparque config) {
+    char Nomempresa[50], Nominstal[50];
+
+    int op2; //op2 refere-se à configuração inicial, relacionada ao piso, filas e lugares
+    
+    printf("===CONFIGURAÇÃO DO PARQUE===\n\n");
+    if (lerconfig(&config)) {
+        printf("Pisos: %d | Filas: %d | Lugares: %d\n", config.numpisos, config.numfilas, config.numlugares);
+    } else {
+        printf("Nenhuma configuração encontrada ou inválida.\n\n");
+    }
+    
+    // Menu de teste
+    do {
+        printf("\n--- CONFIGURAÇAO DE PISOS ---\n");
+        printf("1. Criar nova configuração\n");
+        printf("2. Ler configuração atual\n");
+        printf("3. Modificar configuração\n");
+        printf("0. Sair\n");
+        printf("Opção: ");
+        scanf("%d", &op2);
+        
+        switch(op2) {
+            case 1:
+                printf("\nNova configuração:\n");
+                printf("Número de pisos (1-%d): ", MAX_PISOS);
+                scanf("%d", &config.numpisos);
+                printf("Número de filas (1-%d): ", MAX_FILAS);
+                scanf("%d", &config.numfilas);
+                printf("Lugares por fila (1-%d): ", MAX_LUGARES);
+                scanf("%d", &config.numlugares);
+                
+                if (gravarconfig(&config)) {
+                    printf("Configuração criada!\n");
+                } else {
+                    printf("Erro ao gravar configuração!\n");
+                }
+                break;
+                
+            case 2:
+                if (lerconfig(&config)) {
+                    printf("\n--- CONFIGURAÇÃO ATUAL ---\n");
+                    printf("Pisos: %d\n", config.numpisos);
+                    printf("Filas: %d (A-%c)\n", config.numfilas, 'A' + config.numfilas - 1);
+                    printf("Lugares por fila: %d\n", config.numlugares);
+                    printf("Capacidade total: %d lugares\n",
+                           config.numpisos * config.numfilas * config.numlugares);
+                } else {
+                    printf("Erro ao ler configuração!\n");
+                }
+                break;
+                
+            case 3:
+                if (lerconfig(&config)) {
+                    printf("\nConfiguração atual: P=%d F=%d L=%d\n",
+                           config.numpisos, config.numfilas, config.numlugares);
+                    printf("Novos valores:\n");
+                    printf("Pisos: "); scanf("%d", &config.numpisos);
+                    printf("Filas: "); scanf("%d", &config.numfilas);
+                    printf("Lugares: "); scanf("%d", &config.numlugares);
+                    
+                    if (gravarconfig(&config)) {
+                        printf("Configuração atualizada!\n");
+                    } else {
+                        printf("Erro ao atualizar!\n");
+                    }
+                } else {
+                    printf("Nenhuma configuração para modificar!\n");
+                }
+                break;
+                
+            case 0:
+                return 0;
+                break;
+        }
+    } while(op2 != 0);
+}
+
+
+
+
+
+
+
+
+
+
+
+int lerconfig(Confparque *config){
+    if (config == NULL) {
+        return 0;
+    }
+
+    FILE *f = fopen(Ficheiro_config, "r");
+    if (f == NULL) {
+        return 0; //Ficheiro não existe (primeira vez)
+    }
+
+    int numPisos = 0, numFilas = 0, numLugares = 0; //criamos variaveis temporarias para, antes de colocar os valores na struct ler e validar os mesmos.
+    int resultado = fscanf(f, "%d %d %d", &numPisos, &numFilas, &numLugares);
+    fclose(f);
+
+    if (resultado != 3) { //O resultado deve ler 3 valores. (numPisos, numFilas e numLugares). Caso contrario retornar 0 (falha)
+        return 0;
+    }
+//Depois, validar se os números colocados são validos, por isso retornar 0 se forem menores ou iguais a 0, ou maiores que os maximos que definimos no topo.
+    if (numPisos <= 0 || numPisos > MAX_PISOS) return 0;
+    if (numFilas <= 0 || numFilas > MAX_FILAS) return 0;
+    if (numLugares <= 0 || numLugares > MAX_LUGARES) return 0;
+//Agora que as variaveis temporarias foram validadas, passamos as mesmas para as variaveis da struct
+    config->numpisos = numPisos;
+    config->numfilas = numFilas;
+    config->numlugares = numLugares;
+
+    return 1;
+}
+
+int gravarconfig(const Confparque *config) {
+    if (config == NULL) {
+        return 0;
+    }
+
+    // Validar variaveis primeiro
+    if (config->numpisos <= 0 || config->numpisos > MAX_PISOS) return 0;
+    if (config->numfilas <= 0 || config->numfilas > MAX_FILAS) return 0;
+    if (config->numlugares <= 0 || config->numlugares > MAX_LUGARES) return 0;
+
+    FILE *f = fopen(Ficheiro_config, "w");
+    if (f == NULL) {
+        return 0;
+    }
+    fprintf(f, "%d %d %d\n", config->numpisos, config->numfilas, config->numlugares);
+       
+       fprintf(f, "# Configuracao do Parque de Estacionamento\n");
+    fprintf(f, "# Pisos: %d\n", config->numpisos);
+    fprintf(f, "# Filas: %d (A-%c)\n", config->numfilas, 'A' + config->numfilas - 1);
+    fprintf(f, "# Lugares por fila: %d\n", config->numlugares);
+       
+       fclose(f);
+       
+       printf("\nConfiguração guardada com sucesso!\n");
+       return 1;
+ 
+}
+
+for(int j=0
+
+
+
+
