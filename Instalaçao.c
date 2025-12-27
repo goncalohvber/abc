@@ -10,9 +10,10 @@
 #include "Instalacao.h"
 #include "Tarifas.h"
 #include "Util.h"
-#include "Estacionamento.h"
-estacionamento vEstac[MAX_REG_EST];
-void mostrarMensagem(char *mens);
+
+void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiroerros, Confparque config);
+void MostrarFicheiroEstacionamento(const char *nomeFicheiro);
+void mostrarMensagem(const char *mens);
 
 int lerconfig(Confparque *config){
     if (config == NULL) {
@@ -118,8 +119,9 @@ int personalizapp(Confparque config) {
         printf("Erro ao gravar configuração!\n");
         return 0;
     }
+    LimpaFicheiroEstac("estacionamentos.txt", "estacionamentos_validos.txt", "relatorio_erros.txt", config);
     mostrarMensagem("Será apresentado o Registo de estacionamentos.");
-    MostrarFicheiroEstacionamento("estacionamentos.txt");
+    MostrarFicheiroEstacionamento("estacionamentos_validos.txt");
     FILE *F1 = fopen("configfeita.txt", "w"); {
         int resultado = config.numpisos*config.numfilas*config.numlugares;
         fprintf(F1, "Empresa: %s\tUsuário: %s\tTamanho do parque %d Pisos * %d Filas * %d Lugares\tQuantidade de lugares totais: %d", config.Nomempresa, config.Nominstal, config.numpisos, config.numfilas, config.numlugares, resultado);
@@ -127,5 +129,4 @@ int personalizapp(Confparque config) {
     }
         return 1;
 }
-
 
