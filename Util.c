@@ -1,13 +1,9 @@
-//
-//  Util.c
-//  ProjetoEstacionamento
-//
-//  Created by Gonçalo Henrique Viegas Bernardino on 11/12/2025.
-//
 #include "Estacionamento.h"
 #include "Util.h"
 #include "Instalacao.h"
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 int personalizapp(Confparque config);
 int ABissexto(int ano){
@@ -40,6 +36,68 @@ int validaData(int dia, int mes, int ano) {
     } else {
         return 0;
     }
+}
+
+int validamatricula(char *mat) {
+        // Verificar o tamanho
+        // Se não tiver exatamente 8 caracteres (ex: "AA-00-AA"), falha logo.
+        if (strlen(mat) != 8) {
+            return 0;
+        }
+
+        // Verificar os separadores
+        // As posições 2 e 5 devem ser o traço
+        if (mat[2] != '-' || mat[5] != '-') {
+            return 0;
+        }
+
+        //Verificar os caracteres alfanuméricos
+        for (int i = 0; i < 8; i++) {
+            if (i == 2 || i == 5) { //para ignorar os hifens
+                continue;
+            }
+
+            if (!isalnum(mat[i])) {
+                return 0;
+            }
+        }
+        //passou por tudo, valida
+        return 1;
+    }
+
+int validaLugar(char *lugar, int maxPisos, int maxFila, int maxLugares) {
+    if (strlen(lugar) < 3){
+        return 0; }
+    
+    //PISO
+    int piso = lugar[0] - '0';
+    if (piso < 1 || piso > 5){
+        return 0;
+    } // Limite da estrutura
+    if (piso > maxPisos) {
+        return 0;
+    }    // Limite definido pelo utilizador
+    
+    //FILA
+    char fila = lugar[1];
+    if (fila < 'A' || fila > 'Z') {
+        return 0;
+    }
+    if (fila > maxFila){
+        return 0;
+    }
+    
+    //NUMERO
+    int numero = atoi(&lugar[2]); // atoi da biblioteca stdlib, serve para depois do lugar[2] ele tbm considerar os restantes lugares que sejam também números (necessário porque o lugar pode ter 1 digito ou 2)
+    if (numero < 1) {
+        return 0;
+    }
+    if (numero > maxLugares){
+        return 0;
+    }
+    
+    //se o resto for valido:
+    return 1;
 }
 
 void mostrarMensagem(char *mens){
