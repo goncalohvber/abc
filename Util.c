@@ -1,3 +1,9 @@
+//
+//  Util.c
+//  ProjetoEstacionamento
+//
+//  Created by Gonçalo Henrique Viegas Bernardino on 11/12/2025.
+//
 #include "Estacionamento.h"
 #include "Util.h"
 #include "Instalacao.h"
@@ -6,6 +12,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 int personalizapp(Confparque config);
+void gerarficheiroocupacao(char *ficheirovalido, char *ficheiroocupacao,
+                           int diaU, int mesU, int anoU,int horaU,int minU);
 int ABissexto(int ano){
     if ((ano % 4 == 0 && ano % 100 != 0) || (ano % 400 == 0)) {
             return 1;
@@ -100,6 +108,35 @@ int validaLugar(char *lugar, int maxPisos, int maxFila, int maxLugares) {
     return 1;
 }
 
+int validaEantesS(int diaE, int mesE, int anoE, int horaE, int minE, int diaS, int mesS, int anoS, int horaS, int minS) { //função que garante o carro sai, depois de entrar)
+    if(anoE>anoS)
+        return 0;
+    if(anoS>anoE)
+        return 1;
+    
+    //Se o código chegar aqui, os anos são iguais (o mesmo aplica-se aos meses, dias e horas, que vao seguir o mesmo formato
+    
+    if(mesE>mesS)
+        return 0;
+    if(mesS>mesE)
+        return 1;
+    
+    if(diaE>diaS)
+        return 0;
+    if(diaS>diaE)
+        return 1;
+    
+    if(horaE>horaS)
+        return 0;
+    if(horaS>horaE)
+        return 1;
+    
+    if(minS>minE)
+        return 1;
+    
+    return 0;
+}
+
 void mostrarMensagem(char *mens){
     printf("\n%s", mens);
     printf("\nDigite <Enter> para continuar... ");
@@ -110,6 +147,7 @@ void mostrarMensagem(char *mens){
 
 void mostrarMenu(void) {
     int op1;
+    int diaU, mesU, anoU, horaU, minU;
     printf("\n");
     printf("\t========================================\n");
     printf("\t||           GESTÃO DE PARQUE         ||\n");
@@ -128,11 +166,45 @@ void mostrarMenu(void) {
     scanf("%d", &op1);
     
     switch (op1) {
+            
+        case 1:
+           
+            printf("Qual a data que quer verificar? (DD MM AAAA): ");
+                scanf("%d %d %d", &diaU, &mesU, &anoU);
+
+                printf("Qual a hora? (HH MM): ");
+                scanf("%d %d", &horaU, &minU);
+            
+            gerarficheiroocupacao("estacionamentos_validos.txt", "Ocupacaoatual.txt", diaU, mesU, anoU, horaU, minU);
+            break;
         case 4:
             remove("configfeita.txt");
             Confparque config;
             system("clear");
             personalizapp(config);
+            break;
     }
 
+}
+
+
+int ComparaDatas(int d1, int m1, int a1, int h1, int min1,
+                 int d2, int m2, int a2, int h2, int min2) {
+    
+    if (a1 > a2) return 1;
+    if (a1 < a2) return -1;
+    
+    if (m1 > m2) return 1;
+    if (m1 < m2) return -1;
+
+    if (d1 > d2) return 1;
+    if (d1 < d2) return -1;
+
+    if (h1 > h2) return 1;
+    if (h1 < h2) return -1;
+
+    if (min1 > min2) return 1;
+    if (min1 < min2) return -1;
+
+    return 0;
 }
