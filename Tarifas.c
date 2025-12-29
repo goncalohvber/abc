@@ -96,7 +96,8 @@ int lertarifas(Tarifa tarifas[], int *numtarifas) { //Ler o ficheiro criado "Tar
         char codigo[10];
         int horaInf, minInf, horaSup, minSup;
         float valor;
-        int resultado = sscanf(linha, "%c\t%[^\t]\t%d:%d\t%d:%d\t%f", &tipo, codigo, &horaInf, &minInf, &horaSup, &minSup, &valor);
+        int resultado = sscanf(linha, " %c %s %d:%d %d:%d %f",
+                               &tipo, codigo, &horaInf, &minInf, &horaSup, &minSup, &valor);
         
         if (resultado != 7) {
            
@@ -134,6 +135,101 @@ int lertarifas(Tarifa tarifas[], int *numtarifas) { //Ler o ficheiro criado "Tar
     
     printf("%d tarifa(s) carregada(s) com sucesso.\n", *numtarifas);
     return 1;
+}
+
+float ObterPreco(Tarifa tarifas[], int numTarifas, char *codigoProcurado) { //Função para retornar o valor de qualquer código
+    for (int i = 0; i < numTarifas; i++) {
+        if (strcmp(tarifas[i].codigo, codigoProcurado) == 0) {
+            return tarifas[i].valor;
+        }
+    }
+    return 0.0;
+}
+
+int ObterHoraInicio(Tarifa tarifas[], int numTarifas, char *codigoProcurado) { // Retorna a hora de início de uma tarifa de qualquer codigo
+    for (int i = 0; i < numTarifas; i++) {
+        if (strcmp(tarifas[i].codigo, codigoProcurado) == 0) {
+            return tarifas[i].horaInf;
+        }
+    }
+    return 8; // Valor por defeito se falhar (8:00)
+}
+
+
+// Função auxiliar para verificar se é horário diurno (nao fazemos o noturno porque basta usar um else)
+int EHorarioDiurno(int hora, int hInicioDiurno, int hFimDiurno) {
+    return (hora >= hInicioDiurno && hora < hFimDiurno);
+}
+
+float CalcularPreco(int dE, int mE, int aE, int hE, int minE,
+                    int dS, int mS, int aS, int hS, int minS,
+                    Tarifa tarifas[], int numTarifas)
+{
+    float totalPagar = 0.0;
+
+    float precoCT1 = ObterPreco(tarifas, numTarifas, "CT1"); // Diurno
+    float precoCT2 = ObterPreco(tarifas, numTarifas, "CT2"); // Noturno
+    float precoCT3 = ObterPreco(tarifas, numTarifas, "CT3"); // Mudança Dia
+    float precoCT4 = ObterPreco(tarifas, numTarifas, "CT4"); // Mais de dois dia
+    
+    // Descobrir a que horas começa o dia (8h no CT1)
+    int inicioDia = ObterHoraInicio(tarifas, numTarifas, "CT1");
+    // Descobrir a que horas acaba o dia ( 22h no CT1)
+    int fimDia = ObterHoraInicio(tarifas, numTarifas, "CT2");
+    // (Nota: Se CT1 é 08:00-22:00, o fimDia deve ser 22)
+
+    // Calcular Diferença de Dias
+    int diferencaDias = dS - dE;
+
+    // --- CÁLCULO DAS DIÁRIAS (CT3 e CT4) ---
+    if (diferencaDias > 0) {
+        // Se ficou mais de 1 dia (dias "do meio" completos)
+        if (diferencaDias > 1) {
+            totalPagar += (diferencaDias - 1) * precoCT4;
+        }
+        // Taxa de mudança de dia (pernoita)
+        totalPagar += precoCT3;
+    }
+
+    // --- CÁLCULO DAS HORAS (CT1 e CT2) ---
+    // Convertemos tudo para minutos absolutos do dia (0 a 1440)
+    long minutosEntrada = (hE * 60) + minE;
+    long minutosSaida = (hS * 60) + minS;
+
+    if (diferencaDias == 0) {
+        // MESMO DIA: Diferença simples
+        long duracao = minutosSaida - minutosEntrada;
+        
+        for (int i = 0; i < duracao; i++) {
+            int minutoAtualDoDia = minutosEntrada + i;
+            int horaAtual = (minutoAtualDoDia / 60); // Divisão inteira dá a hora (0-23)
+            
+            if (EHorarioDiurno(horaAtual, inicioDia, fimDia)) {
+                totalPagar += (precoCT1 / 60.0); // Preço por minuto diurno
+            } else {
+                totalPagar += (precoCT2 / 60.0); // Preço por minuto noturno
+            }
+        }
+    }
+    else {
+        // DIAS DIFERENTES:
+        long minAteMeiaNoite = (24 * 60) - minutosEntrada;
+        for (int i = 0; i < minAteMeiaNoite; i++) {
+            int horaAtual = ((minutosEntrada + i) / 60);
+            if (EHorarioDiurno(horaAtual, inicioDia, fimDia)) totalPagar += (precoCT1 / 60.0);
+            else totalPagar += (precoCT2 / 60.0);
+        }
+
+        // B) Desde a meia-noite (00:00) até à saída
+        long minDesdeMeiaNoite = minutosSaida;
+        for (int i = 0; i < minDesdeMeiaNoite; i++) {
+            int horaAtual = (i / 60);
+            if (EHorarioDiurno(horaAtual, inicioDia, fimDia)) totalPagar += (precoCT1 / 60.0);
+            else totalPagar += (precoCT2 / 60.0);
+        }
+    }
+
+    return totalPagar;
 }
 
 
