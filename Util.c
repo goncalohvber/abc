@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 int personalizapp(Confparque config);
+int lerconfig(Confparque *config);
 void gerarficheiroocupacao(char *ficheirovalido, char *ficheiroocupacao,
                            int diaU, int mesU, int anoU,int horaU,int minU);
 int ABissexto(int ano){
@@ -148,44 +149,65 @@ void mostrarMensagem(char *mens){
 void mostrarMenu(void) {
     int op1;
     int diaU, mesU, anoU, horaU, minU;
-    printf("\n");
-    printf("\t========================================\n");
-    printf("\t||           GESTÃO DE PARQUE         ||\n");
-    printf("\t========================================\n");
-    printf("\t||                                    ||\n");
-    printf("\t||   [1] Registar Entrada             ||\n");
-    printf("\t||   [2] Registar Saída               ||\n");
-    printf("\t||   [3] Mostrar Mapa                 ||\n");
-    printf("\t||   [4] Reconfigurar Parque          ||\n");
-    printf("\t||                                    ||\n");
-    printf("\t||   ------------------------------   ||\n");
-    printf("\t||   [0] Sair                         ||\n");
-    printf("\t||                                    ||\n");
-    printf("\t========================================\n");
-    printf("\n\t>> Escolha uma opção: ");
-    scanf("%d", &op1);
-    
-    switch (op1) {
-            
-        case 1:
-           
-            printf("Qual a data que quer verificar? (DD MM AAAA): ");
+    Confparque config;
+    if (!lerconfig(&config)) {
+        printf("Erro ao carregar configuração!\n");
+        return; }
+        printf("\n");
+        printf("\t========================================\n");
+        printf("\t||           GESTÃO DE PARQUE         ||\n");
+        printf("\t========================================\n");
+        printf("\t||                                    ||\n");
+        printf("\t||   [1] Registar Entrada             ||\n");
+        printf("\t||   [2] Registar Saída               ||\n");
+        printf("\t||   [3] Mostrar Mapa                 ||\n");
+        printf("\t||   [4] Reconfigurar Parque          ||\n");
+        printf("\t||                                    ||\n");
+        printf("\t||   ------------------------------   ||\n");
+        printf("\t||   [0] Sair                         ||\n");
+        printf("\t||                                    ||\n");
+        printf("\t========================================\n");
+        printf("\n\t>> Escolha uma opção: ");
+        scanf("%d", &op1);
+        
+        switch (op1) {
+                
+            case 1:
+                
+                printf("Qual a data que quer verificar? (DD MM AAAA): ");
                 scanf("%d %d %d", &diaU, &mesU, &anoU);
-
+                
                 printf("Qual a hora? (HH MM): ");
                 scanf("%d %d", &horaU, &minU);
-            
-            gerarficheiroocupacao("estacionamentos_validos.txt", "Ocupacaoatual.txt", diaU, mesU, anoU, horaU, minU);
-            break;
-        case 4:
-            remove("configfeita.txt");
-            Confparque config;
-            system("clear");
-            personalizapp(config);
-            break;
+                
+                gerarficheiroocupacao("estacionamentos_validos.txt", "Ocupacaoatual.txt", diaU, mesU, anoU, horaU, minU);
+                break;
+                
+            case 3:
+                printf("Qual a data que quer ver? (DD MM AAAA): ");
+                scanf("%d %d %d", &diaU, &mesU, &anoU);
+                printf("Qual a hora? (HH MM): ");
+                scanf("%d %d", &horaU, &minU);
+                
+                gerarficheiroocupacao("estacionamentos_validos.txt", "Ocupacaoatual.txt",
+                                     diaU, mesU, anoU, horaU, minU);
+                
+                Lugar mapa[MAX_PISOS][MAX_FILAS][MAX_LUGARES];
+                MostrarMapaOcupacao_ComMapa(config, "Ocupacaoatual.txt", mapa);
+                
+                mostrarMensagem("\nPrima Enter para continuar...");
+                break;
+                
+            case 4:
+                remove("configfeita.txt");
+                Confparque config;
+                system("clear");
+                personalizapp(config);
+                break;
+        }
+        
     }
 
-}
 
 
 int ComparaDatas(int d1, int m1, int a1, int h1, int min1,
