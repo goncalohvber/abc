@@ -28,8 +28,7 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
 
     estacionamento E;
     int novoID = 1;
-    
-    // ✅ Load tarifas BEFORE processing entries
+
     Tarifa tarifas[MAX_TARIFAS];
     int numTarifas = 0;
     
@@ -42,6 +41,10 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
     }
     
     printf("DEBUG: %d tarifas carregadas\n", numTarifas);
+    
+    // 🆕 ADICIONAR: Array para rastrear matrículas no parque
+    char matriculasNoParque[MAX_REG_EST][10];
+    int numMatriculasNoParque = 0;
     
     while (fscanf(f_og, "%d %s %d %d %d %d %d %s %d %d %d %d %d",
                   &E.numE, E.matricula,
@@ -57,8 +60,19 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
         int tempovalido = validaEantesS(E.diaE, E.mesE, E.anoE, E.horaE, E.minE,
                                         E.diaS, E.mesS, E.anoS, E.horaS, E.minS);
         
+        // 🆕 ADICIONAR: Verificar se matrícula já está no parque
+        int matriculaDuplicada = 0;
+        if (E.anoS == 0) {  // Se ainda não saiu
+            for (int i = 0; i < numMatriculasNoParque; i++) {
+                if (strcmp(matriculasNoParque[i], E.matricula) == 0) {
+                    matriculaDuplicada = 1;
+                    break;
+                }
+            }
+        }
+        
         if (entradaValida == 1 && saidaValida == 1 && matriculaValida == 1 &&
-            lugarvalido == 1 && tempovalido == 1) {
+            lugarvalido == 1 && tempovalido == 1 && !matriculaDuplicada) {
             
             float precoPagar = CalcularPreco(E.diaE, E.mesE, E.anoE, E.horaE, E.minE,
                                            E.diaS, E.mesS, E.anoS, E.horaS, E.minS,
@@ -70,6 +84,13 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
                     E.lugar,
                     E.anoS, E.mesS, E.diaS, E.horaS, E.minS,
                     precoPagar);
+            
+            // 🆕 ADICIONAR: Se ainda não saiu, adicionar ao array
+            if (E.anoS == 0 && numMatriculasNoParque < MAX_REG_EST) {
+                strcpy(matriculasNoParque[numMatriculasNoParque], E.matricula);
+                numMatriculasNoParque++;
+            }
+            
             novoID++;
         }
         else if(entradaValida != 1) {
@@ -91,6 +112,11 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
         else if(tempovalido != 1){
             fprintf(f_err, "[ERRO] Linha %d | A Data de entrada é posterior à Data de saida. (Impossível)\n",
                     E.numE);
+        }
+        // 🆕 ADICIONAR: Novo tipo de erro
+        else if(matriculaDuplicada){
+            fprintf(f_err, "[ERRO] Linha %d | Matricula: %s (Veículo já está no parque - entrada duplicada)\n",
+                    E.numE, E.matricula);
         }
     }
 
@@ -172,10 +198,115 @@ void gerarficheiroocupacao(char *ficheirovalido, char *ficheiroocupacao,
     fclose(f_ocup);
 }
 
-
-void registentrada(int a) {
+// ============================================================
+// FUNÇÃO PRINCIPAL: Registar Entrada
+// ============================================================
+int registarEntrada(Confparque config, char *ficheiroEstacionamentos) {
+    estacionamento novoEstac;
+    char matriculaTemp[10];
+    int dia, mes, ano, hora, min;
+    int carroJaNoParque = 0;
     
+    printf("\n╔═══════════════════════════════════════════════════════════╗\n");
+    printf("║              ➕ REGISTAR ENTRADA DE VEÍCULO               ║\n");
+    printf("╚═══════════════════════════════════════════════════════════╝\n\n");
+    
+    // ========== PASSO 1: PEDIR DATA E HORA ==========
+    do {
+        printf("📅 Data de entrada (DD MM AAAA): ");
+        scanf("%d %d %d", &dia, &mes, &ano);
+        
+        if (!validaData(dia, mes, ano)) {
+            printf("❌ Data inválida! Tente novamente.\n\n");
+        }
+    } while (!validaData(dia, mes, ano));
+    
+    do {
+        printf("🕐 Hora de entrada (HH MM): ");
+        scanf("%d %d", &hora, &min);
+        
+        if (hora < 0 || hora > 23 || min < 0 || min > 59) {
+            printf("❌ Hora inválida! Tente novamente.\n\n");
+        }
+    } while (hora < 0 || hora > 23 || min < 0 || min > 59);
+    
+    // ========== PASSO 2: PEDIR MATRÍCULA ==========
+    do {
+        printf("🚗 Matrícula do veículo (XX-XX-XX): ");
+        scanf("%s", matriculaTemp);
+        
+        // Validar formato
+        if (!validamatricula(matriculaTemp)) {
+            printf("❌ Matrícula inválida! Formato correto: XX-XX-XX\n\n");
+            continue;
+        }
+        
+        // 🆕 MODIFICAÇÃO: Verificar em estacionamentos.txt (não no _validos)
+        if (verificarCarroNoParque(matriculaTemp, "estacionamentos.txt")) {
+            printf("❌ ERRO: O veículo %s já se encontra no parque!\n", matriculaTemp);
+            printf("   Por favor, verifique a matrícula ou registe a saída primeiro.\n\n");
+            carroJaNoParque = 1;
+        } else {
+            carroJaNoParque = 0;
+        }
+        
+    } while (!validamatricula(matriculaTemp) || carroJaNoParque);
+    
+    // ========== PASSO 3: ATRIBUIR LUGAR ==========
+    // 🆕 MODIFICAÇÃO: Usar estacionamentos.txt
+    char *lugarAtribuido = atribuirLugar(config, "estacionamentos.txt");
+    
+    if (lugarAtribuido == NULL) {
+        printf("\n❌ ERRO: Não há lugares disponíveis no parque!\n");
+        return 0;
+    }
+    
+    // ========== PASSO 4: PREENCHER ESTRUTURA ==========
+    // 🆕 MODIFICAÇÃO: Obter próximo número de estacionamentos.txt
+    novoEstac.numE = obterProximoNumeroEntrada("estacionamentos.txt");
+    strcpy(novoEstac.matricula, matriculaTemp);
+    novoEstac.anoE = ano;
+    novoEstac.mesE = mes;
+    novoEstac.diaE = dia;
+    novoEstac.horaE = hora;
+    novoEstac.minE = min;
+    strcpy(novoEstac.lugar, lugarAtribuido);
+    
+    // Data de saída = 0 (ainda não saiu)
+    novoEstac.anoS = 0;
+    novoEstac.mesS = 0;
+    novoEstac.diaS = 0;
+    novoEstac.horaS = 0;
+    novoEstac.minS = 0;
+    
+    // ========== PASSO 5: GRAVAR NO FICHEIRO BASE ==========
+    // 🆕 MODIFICAÇÃO: Gravar em estacionamentos.txt
+    FILE *f = fopen("estacionamentos.txt", "a");
+    
+    if (f == NULL) {
+        printf("❌ ERRO: Não foi possível abrir o ficheiro!\n");
+        return 0;
+    }
+    
+    // 🆕 USAR TABS para manter formato consistente
+    fprintf(f, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\n",
+            novoEstac.numE,
+            novoEstac.matricula,
+            novoEstac.anoE, novoEstac.mesE, novoEstac.diaE,
+            novoEstac.horaE, novoEstac.minE,
+            novoEstac.lugar,
+            novoEstac.anoS, novoEstac.mesS, novoEstac.diaS,
+            novoEstac.horaS, novoEstac.minS);
+    
+    fclose(f);
+    
+    // ========== PASSO 6: MOSTRAR TICKET ==========
+    printf("\n✅ Entrada registada com sucesso!\n");
+    mostrarTicket(novoEstac);
+    
+    return 1;
 }
+
 
 // Função para inicializar o mapa (tudo livre)
 void InicializarMapa(Lugar mapa[][MAX_FILAS][MAX_LUGARES], Confparque config) {
@@ -324,4 +455,255 @@ void MostrarMapaOcupacao_ComMapa(Confparque config, char *ficheiroOcupacao,
     printf("   Lugares ocupados: %d\n", ocupados);
     printf("   Lugares livres: %d\n", totalLugares - ocupados);
     printf("   Taxa de ocupação: %.1f%%\n", percentagem);
+}
+
+// ============================================================
+// FUNÇÃO AUXILIAR: Mostrar ticket
+// ============================================================
+void mostrarTicket(estacionamento E) {
+    printf("\n");
+    printf("╔════════════════════════════════════════════════════════════╗\n");
+    printf("║              🎫 TICKET DE ESTACIONAMENTO                  ║\n");
+    printf("╠════════════════════════════════════════════════════════════╣\n");
+    printf("║                                                            ║\n");
+    printf("║  Nº Entrada: %-6d                                        ║\n", E.numE);
+    printf("║  Matrícula:  %-10s                                      ║\n", E.matricula);
+    printf("║                                                            ║\n");
+    printf("║  📍 Lugar Atribuído: %-5s                                ║\n", E.lugar);
+    printf("║                                                            ║\n");
+    printf("║  📅 Data Entrada: %02d/%02d/%d                              ║\n",
+           E.diaE, E.mesE, E.anoE);
+    printf("║  🕐 Hora Entrada: %02d:%02d                                   ║\n",
+           E.horaE, E.minE);
+    printf("║                                                            ║\n");
+    printf("║  ⚠️  Guarde este ticket para efetuar o pagamento!         ║\n");
+    printf("║                                                            ║\n");
+    printf("╚════════════════════════════════════════════════════════════╝\n");
+}
+
+// ============================================================
+// FUNÇÃO PRINCIPAL: Registar Saída
+// ============================================================
+int registarSaida(Confparque config, char *ficheiroEstacionamentos) {
+    char matriculaProcurada[10];
+    int dia, mes, ano, hora, min;
+    int encontrado = 0;
+    
+    printf("\n╔═══════════════════════════════════════════════════════════╗\n");
+    printf("║              ➖ REGISTAR SAÍDA DE VEÍCULO                ║\n");
+    printf("╚═══════════════════════════════════════════════════════════╝\n\n");
+    
+    // ========== PASSO 1: PEDIR MATRÍCULA ==========
+    do {
+        printf("🚗 Matrícula do veículo (XX-XX-XX): ");
+        scanf("%s", matriculaProcurada);
+        
+        if (!validamatricula(matriculaProcurada)) {
+            printf("❌ Matrícula inválida! Formato correto: XX-XX-XX\n\n");
+        }
+    } while (!validamatricula(matriculaProcurada));
+    
+    // ========== PASSO 2: VERIFICAR SE ESTÁ NO PARQUE ==========
+    // 🆕 MODIFICAÇÃO: Ler de estacionamentos.txt
+    FILE *f = fopen("estacionamentos.txt", "r");
+    if (f == NULL) {
+        printf("❌ ERRO: Não foi possível abrir o ficheiro!\n");
+        return 0;
+    }
+    
+    estacionamento E;
+    
+    // 🆕 Procurar o veículo (sem ler preço, porque ainda não foi calculado)
+    while (fscanf(f, "%d %s %d %d %d %d %d %s %d %d %d %d %d",
+                  &E.numE, E.matricula,
+                  &E.anoE, &E.mesE, &E.diaE, &E.horaE, &E.minE,
+                  E.lugar,
+                  &E.anoS, &E.mesS, &E.diaS, &E.horaS, &E.minS) == 13)
+    {
+        if (strcmp(E.matricula, matriculaProcurada) == 0 && E.anoS == 0) {
+            encontrado = 1;
+            break;
+        }
+    }
+    fclose(f);
+    
+    if (!encontrado) {
+        printf("\n❌ ERRO: O veículo %s não se encontra no parque!\n", matriculaProcurada);
+        printf("   Verifique se a matrícula está correta.\n");
+        return 0;
+    }
+    
+    // ========== PASSO 3: MOSTRAR INFO DA ENTRADA ==========
+    printf("\n✅ Veículo encontrado no parque!\n");
+    printf("┌─────────────────────────────────────────────┐\n");
+    printf("│ INFORMAÇÃO DO ESTACIONAMENTO                │\n");
+    printf("├─────────────────────────────────────────────┤\n");
+    printf("│ Nº Entrada: %-6d                         │\n", E.numE);
+    printf("│ Matrícula:  %-10s                       │\n", E.matricula);
+    printf("│ Lugar:      %-5s                          │\n", E.lugar);
+    printf("│ Entrada:    %02d/%02d/%d às %02d:%02d           │\n",
+           E.diaE, E.mesE, E.anoE, E.horaE, E.minE);
+    printf("└─────────────────────────────────────────────┘\n\n");
+    
+    // ========== PASSO 4: PEDIR DATA E HORA DE SAÍDA ==========
+    do {
+        printf("📅 Data de saída (DD MM AAAA): ");
+        scanf("%d %d %d", &dia, &mes, &ano);
+        
+        if (!validaData(dia, mes, ano)) {
+            printf("❌ Data inválida! Tente novamente.\n\n");
+        }
+    } while (!validaData(dia, mes, ano));
+    
+    do {
+        printf("🕐 Hora de saída (HH MM): ");
+        scanf("%d %d", &hora, &min);
+        
+        if (hora < 0 || hora > 23 || min < 0 || min > 59) {
+            printf("❌ Hora inválida! Tente novamente.\n\n");
+        }
+    } while (hora < 0 || hora > 23 || min < 0 || min > 59);
+    
+    // ========== PASSO 5: VALIDAR QUE SAÍDA É DEPOIS DA ENTRADA ==========
+    if (!validaEantesS(E.diaE, E.mesE, E.anoE, E.horaE, E.minE,
+                       dia, mes, ano, hora, min)) {
+        printf("\n❌ ERRO: A data/hora de saída deve ser posterior à entrada!\n");
+        printf("   Entrada: %02d/%02d/%d às %02d:%02d\n", E.diaE, E.mesE, E.anoE, E.horaE, E.minE);
+        printf("   Saída:   %02d/%02d/%d às %02d:%02d\n", dia, mes, ano, hora, min);
+        return 0;
+    }
+    
+    // ========== PASSO 6: CARREGAR TARIFAS (NÃO CALCULAR PREÇO) ==========
+    // 🆕 NÃO calculamos preço aqui, será calculado na validação
+    
+    // ========== PASSO 7: ATUALIZAR O FICHEIRO ==========
+    // 🆕 MODIFICAÇÃO: Atualizar estacionamentos.txt
+    FILE *f_temp = fopen("temp_estacionamentos.txt", "w");
+    if (f_temp == NULL) {
+        printf("❌ ERRO: Não foi possível criar ficheiro temporário!\n");
+        return 0;
+    }
+    
+    f = fopen("estacionamentos.txt", "r");
+    if (f == NULL) {
+        printf("❌ ERRO: Não foi possível reabrir o ficheiro!\n");
+        fclose(f_temp);
+        return 0;
+    }
+    
+    // Copiar todos os registos, atualizando o correto
+    while (fscanf(f, "%d %s %d %d %d %d %d %s %d %d %d %d %d",
+                  &E.numE, E.matricula,
+                  &E.anoE, &E.mesE, &E.diaE, &E.horaE, &E.minE,
+                  E.lugar,
+                  &E.anoS, &E.mesS, &E.diaS, &E.horaS, &E.minS) == 13)
+    {
+        if (strcmp(E.matricula, matriculaProcurada) == 0 && E.anoS == 0) {
+            // Este é o registo a atualizar (com TABS)
+            fprintf(f_temp, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\n",
+                    E.numE, E.matricula,
+                    E.anoE, E.mesE, E.diaE, E.horaE, E.minE,
+                    E.lugar,
+                    ano, mes, dia, hora, min);  // ← Nova data/hora de saída
+        } else {
+            // Copiar o registo sem alterações (com TABS)
+            fprintf(f_temp, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\n",
+                    E.numE, E.matricula,
+                    E.anoE, E.mesE, E.diaE, E.horaE, E.minE,
+                    E.lugar,
+                    E.anoS, E.mesS, E.diaS, E.horaS, E.minS);
+        }
+    }
+    
+    fclose(f);
+    fclose(f_temp);
+    
+    // Substituir o ficheiro original pelo temporário
+    remove("estacionamentos.txt");
+    rename("temp_estacionamentos.txt", "estacionamentos.txt");
+    
+    // ========== PASSO 8: CALCULAR PREÇO PARA MOSTRAR ==========
+    Tarifa tarifas[MAX_TARIFAS];
+    int numTarifas = 0;
+    
+    if (!lertarifas(tarifas, &numTarifas)) {
+        printf("❌ ERRO: Não foi possível carregar as tarifas!\n");
+        return 0;
+    }
+    
+    float precoPagar = CalcularPreco(E.diaE, E.mesE, E.anoE, E.horaE, E.minE,
+                                     dia, mes, ano, hora, min,
+                                     tarifas, numTarifas);
+    
+    // ========== PASSO 9: MOSTRAR RECIBO ==========
+    printf("\n✅ Saída registada com sucesso!\n");
+    mostrarRecibo(E.numE, matriculaProcurada, E.lugar,
+                  E.diaE, E.mesE, E.anoE, E.horaE, E.minE,
+                  dia, mes, ano, hora, min,
+                  precoPagar);
+    
+    return 1;
+}
+
+
+// ============================================================
+// FUNÇÃO AUXILIAR: Mostrar recibo de saída
+// ============================================================
+void mostrarRecibo(int numE, char *matricula, char *lugar,
+                   int diaE, int mesE, int anoE, int horaE, int minE,
+                   int diaS, int mesS, int anoS, int horaS, int minS,
+                   float preco) {
+    
+    // Calcular duração
+    int totalMinutos = 0;
+    
+    // Converter datas para minutos totais (simplificado)
+    int minutosEntrada = (diaE * 24 * 60) + (horaE * 60) + minE;
+    int minutosSaida = (diaS * 24 * 60) + (horaS * 60) + minS;
+    
+    // Ajustar para mudança de mês/ano (aproximação)
+    if (anoS > anoE) {
+        minutosSaida += (anoS - anoE) * 365 * 24 * 60;
+    }
+    if (mesS > mesE) {
+        minutosSaida += (mesS - mesE) * 30 * 24 * 60;
+    }
+    
+    totalMinutos = minutosSaida - minutosEntrada;
+    
+    int dias = totalMinutos / (24 * 60);
+    int horas = (totalMinutos % (24 * 60)) / 60;
+    int minutos = totalMinutos % 60;
+    
+    printf("\n");
+    printf("╔═══════════════════════════════════════════════════════════╗\n");
+    printf("║              🧾 RECIBO DE ESTACIONAMENTO                  ║\n");
+    printf("╠═══════════════════════════════════════════════════════════╣\n");
+    printf("║                                                           ║\n");
+    printf("║  Nº Entrada: %-6d                                       ║\n", numE);
+    printf("║  Matrícula:  %-10s                                     ║\n", matricula);
+    printf("║  Lugar:      %-5s                                        ║\n", lugar);
+    printf("║                                                           ║\n");
+    printf("║  ───────────────────────────────────────────────────────  ║\n");
+    printf("║                                                           ║\n");
+    printf("║  📅 Entrada: %02d/%02d/%d às %02d:%02d                       ║\n",
+           diaE, mesE, anoE, horaE, minE);
+    printf("║  📅 Saída:   %02d/%02d/%d às %02d:%02d                       ║\n",
+           diaS, mesS, anoS, horaS, minS);
+    printf("║                                                           ║\n");
+    printf("║  ⏱️  Duração: ");
+    if (dias > 0) printf("%d dia(s), ", dias);
+    printf("%02d:%02d:%02d", horas, minutos / 60, minutos % 60);
+    // Preencher espaços para alinhar
+    int espacos = 28 - (dias > 0 ? 10 : 0);
+    for (int i = 0; i < espacos; i++) printf(" ");
+    printf("║\n");
+    printf("║                                                           ║\n");
+    printf("║  ───────────────────────────────────────────────────────  ║\n");
+    printf("║                                                           ║\n");
+    printf("║  💰 VALOR A PAGAR: %.2f €                              ║\n", preco);
+    printf("║                                                           ║\n");
+    printf("║  Obrigado pela preferência!                               ║\n");
+    printf("║                                                           ║\n");
+    printf("╚═══════════════════════════════════════════════════════════╝\n");
 }
