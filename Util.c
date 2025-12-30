@@ -187,14 +187,14 @@ void mostrarMenu(void) {
                 
             case 2:
                 if (registarSaida(config, "estacionamentos.txt")) {
-                    printf("\nOperação concluída!\n");
-                } else {
-                    printf("\nFalha ao registar saída!\n");
-                }
-                mostrarMensagem("Prima Enter para continuar...");
-                mostrarMenu();
-                LimpaFicheiroEstac("estacionamentos.txt", "estacionamentos_validos.txt", "relatorio_erros.txt", config);
-                break;
+                		printf("\n✅ Operação concluída!\n");
+        						atualizarValidacao(config);
+   						 	} else {
+        						printf("\n❌ Falha ao registar saída!\n");
+   							 }
+    						mostrarMensagem("Prima Enter para continuar...");
+   							mostrarMenu();
+    						break;
                 
             case 3:
                 printf("Qual a data que quer ver? (DD MM AAAA): ");
