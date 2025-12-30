@@ -91,4 +91,15 @@ float CalcularPreco(int dE, int mE, int aE, int hE, int minE,
 
 int criarBackup(void);
 
+int registarEntrada(Confparque config, char *ficheiroEstacionamentos);
+int verificarCarroNoParque(char *matricula, char *ficheiroEstacionamentos);
+int obterProximoNumeroEntrada(char *ficheiroEstacionamentos);
+char* atribuirLugar(Confparque config, char *ficheiroEstacionamentos);
+void mostrarTicket(estacionamento E);
+int registarSaida(Confparque config, char *ficheiroEstacionamentos);
+void mostrarRecibo(int numE, char *matricula, char *lugar,
+                   int diaE, int mesE, int anoE, int horaE, int minE,
+                   int diaS, int mesS, int anoS, int horaS, int minS,
+                   float preco);
+
 #endif /* Estacionamento_h */
