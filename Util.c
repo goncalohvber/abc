@@ -11,6 +11,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+
+void atualizarValidacao(Confparque config);
 int personalizapp(Confparque config);
 void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiroerros, Confparque config);
 int lerconfig(Confparque *config);
