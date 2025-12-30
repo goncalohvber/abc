@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 int personalizapp(Confparque config);
+void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiroerros, Confparque config);
 int lerconfig(Confparque *config);
 void gerarficheiroocupacao(char *ficheirovalido, char *ficheiroocupacao,
                            int diaU, int mesU, int anoU,int horaU,int minU);
@@ -173,14 +174,24 @@ void mostrarMenu(void) {
         switch (op1) {
                 
             case 1:
+                if (registarEntrada(config, "estacionamentos.txt")) {
+                    printf("\n Operação concluída!\n");
+                } else {
+                    printf("\nFalha ao registar entrada!\n");
+                }
+                mostrarMensagem("Prima Enter para continuar...");
+                mostrarMenu();
+                break;
                 
-                printf("Qual a data que quer verificar? (DD MM AAAA): ");
-                scanf("%d %d %d", &diaU, &mesU, &anoU);
-                
-                printf("Qual a hora? (HH MM): ");
-                scanf("%d %d", &horaU, &minU);
-                
-                gerarficheiroocupacao("estacionamentos_validos.txt", "Ocupacaoatual.txt", diaU, mesU, anoU, horaU, minU);
+            case 2:
+                if (registarSaida(config, "estacionamentos.txt")) {
+                    printf("\nOperação concluída!\n");
+                } else {
+                    printf("\nFalha ao registar saída!\n");
+                }
+                mostrarMensagem("Prima Enter para continuar...");
+                mostrarMenu();
+                LimpaFicheiroEstac("estacionamentos.txt", "estacionamentos_validos.txt", "relatorio_erros.txt", config);
                 break;
                 
             case 3:
@@ -230,3 +241,5 @@ int ComparaDatas(int d1, int m1, int a1, int h1, int min1,
 
     return 0;
 }
+
+
