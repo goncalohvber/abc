@@ -22,9 +22,9 @@ int carregarEstacionamentosTXT(char *nomeficheiro, estacionamento est[],
                   &est[*numEst].anoS, &est[*numEst].mesS, &est[*numEst].diaS,
                   &est[*numEst].horaS, &est[*numEst].minS,
                   &preco) == 14) {
-        est[*numEst].valorPago = preco;
-        est[*numEst].ativo = 1;
-        (*numEst)++;
+            est[*numEst].valorPago = preco;
+            est[*numEst].ativo = 1;
+            (*numEst)++;
         if (*numEst >= MAX_REG_EST) {
             printf("  ATENÇÃO: Limite de %d registos atingido!\n", MAX_REG_EST);
             break;

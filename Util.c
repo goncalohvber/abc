@@ -7,12 +7,11 @@
 #include "Estacionamento.h"
 #include "Util.h"
 #include "Instalacao.h"
-#include "GestaoLugares.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-
+void menuGestaoLugares(Confparque config);
 void atualizarValidacao(Confparque config);
 int personalizapp(Confparque config);
 void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiroerros, Confparque config);
@@ -189,14 +188,14 @@ void mostrarMenu(void) {
                 
             case 2:
                 if (registarSaida(config, "estacionamentos.txt")) {
-                		printf("\n✅ Operação concluída!\n");
-        						atualizarValidacao(config);
-   						 	} else {
-        						printf("\n❌ Falha ao registar saída!\n");
-   							 }
-    						mostrarMensagem("Prima Enter para continuar...");
-   							mostrarMenu();
-    						break;
+                        printf("\n✅ Operação concluída!\n");
+                                atualizarValidacao(config);
+                                } else {
+                                printf("\n❌ Falha ao registar saída!\n");
+                                }
+                            mostrarMensagem("Prima Enter para continuar...");
+                               mostrarMenu();
+                            break;
                 
             case 3:
                 printf("Qual a data que quer ver? (DD MM AAAA): ");

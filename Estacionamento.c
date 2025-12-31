@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Estacionamento.h"
+#include "validacoes.h"
 #include "Tarifas.h"
 int validaData(int dia, int mes, int ano);
 int validamatricula(char *mat);
@@ -198,9 +199,66 @@ void gerarficheiroocupacao(char *ficheirovalido, char *ficheiroocupacao,
     fclose(f_ocup);
 }
 
+
 // ============================================================
-// FUNÇÃO PRINCIPAL: Registar Entrada
+// FUNÇÃO AUXILIAR: Verificar se carro já está no parque
 // ============================================================
+int verificarCarroNoParque(char *matricula, char *ficheiroEstacionamentos) {
+    FILE *f = fopen(ficheiroEstacionamentos, "r");
+    if (f == NULL) {
+        return 0; // Ficheiro não existe = nenhum carro no parque
+    }
+    
+    estacionamento E;
+    float preco;
+    
+    while (fscanf(f, "%d %s %d %d %d %d %d %s %d %d %d %d %d %f",
+                  &E.numE, E.matricula,
+                  &E.anoE, &E.mesE, &E.diaE, &E.horaE, &E.minE,
+                  E.lugar,
+                  &E.anoS, &E.mesS, &E.diaS, &E.horaS, &E.minS,
+                  &preco) == 14)
+    {
+        // Se matrícula igual E ainda não saiu (ano saída = 0)
+        if (strcmp(E.matricula, matricula) == 0 && E.anoS == 0) {
+            fclose(f);
+            return 1; // Carro já está no parque!
+        }
+    }
+    
+    fclose(f);
+    return 0; // Carro não está no parque
+}
+
+// ============================================================
+// FUNÇÃO AUXILIAR: Obter próximo número de entrada
+// ============================================================
+int obterProximoNumeroEntrada(char *ficheiroEstacionamentos) {
+    FILE *f = fopen(ficheiroEstacionamentos, "r");
+    if (f == NULL) {
+        return 1;
+    }
+    
+    int ultimoNum = 0;
+    estacionamento E;
+    
+    // ✅ CORREÇÃO: Ler apenas 13 campos (sem preço)
+    while (fscanf(f, "%d %s %d %d %d %d %d %s %d %d %d %d %d",
+                  &E.numE, E.matricula,
+                  &E.anoE, &E.mesE, &E.diaE, &E.horaE, &E.minE,
+                  E.lugar,
+                  &E.anoS, &E.mesS, &E.diaS, &E.horaS, &E.minS) == 13) {
+        
+        if (E.numE > ultimoNum) {
+            ultimoNum = E.numE;
+        }
+    }
+    
+    fclose(f);
+    return ultimoNum + 1;
+}
+
+
 int registarEntrada(Confparque config, char *ficheiroEstacionamentos) {
     estacionamento novoEstac;
     char matriculaTemp[10];
@@ -235,13 +293,11 @@ int registarEntrada(Confparque config, char *ficheiroEstacionamentos) {
         printf("🚗 Matrícula do veículo (XX-XX-XX): ");
         scanf("%s", matriculaTemp);
         
-        // Validar formato
         if (!validamatricula(matriculaTemp)) {
             printf("❌ Matrícula inválida! Formato correto: XX-XX-XX\n\n");
             continue;
         }
         
-        // 🆕 MODIFICAÇÃO: Verificar em estacionamentos.txt (não no _validos)
         if (verificarCarroNoParque(matriculaTemp, "estacionamentos.txt")) {
             printf("❌ ERRO: O veículo %s já se encontra no parque!\n", matriculaTemp);
             printf("   Por favor, verifique a matrícula ou registe a saída primeiro.\n\n");
@@ -253,7 +309,6 @@ int registarEntrada(Confparque config, char *ficheiroEstacionamentos) {
     } while (!validamatricula(matriculaTemp) || carroJaNoParque);
     
     // ========== PASSO 3: ATRIBUIR LUGAR ==========
-    // 🆕 MODIFICAÇÃO: Usar estacionamentos.txt
     char *lugarAtribuido = atribuirLugar(config, "estacionamentos.txt");
     
     if (lugarAtribuido == NULL) {
@@ -262,8 +317,10 @@ int registarEntrada(Confparque config, char *ficheiroEstacionamentos) {
     }
     
     // ========== PASSO 4: PREENCHER ESTRUTURA ==========
-    // 🆕 MODIFICAÇÃO: Obter próximo número de estacionamentos.txt
+    // 🆕 Obter AMBOS os números (base e validado)
     novoEstac.numE = obterProximoNumeroEntrada("estacionamentos.txt");
+    novoEstac.numValidado = obterProximoNumeroEntrada("estacionamentos_validos.txt");
+    
     strcpy(novoEstac.matricula, matriculaTemp);
     novoEstac.anoE = ano;
     novoEstac.mesE = mes;
@@ -280,7 +337,6 @@ int registarEntrada(Confparque config, char *ficheiroEstacionamentos) {
     novoEstac.minS = 0;
     
     // ========== PASSO 5: GRAVAR NO FICHEIRO BASE ==========
-    // 🆕 MODIFICAÇÃO: Gravar em estacionamentos.txt
     FILE *f = fopen("estacionamentos.txt", "a");
     
     if (f == NULL) {
@@ -288,7 +344,6 @@ int registarEntrada(Confparque config, char *ficheiroEstacionamentos) {
         return 0;
     }
     
-    // 🆕 USAR TABS para manter formato consistente
     fprintf(f, "%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\n",
             novoEstac.numE,
             novoEstac.matricula,
@@ -300,13 +355,33 @@ int registarEntrada(Confparque config, char *ficheiroEstacionamentos) {
     
     fclose(f);
     
-    // ========== PASSO 6: MOSTRAR TICKET ==========
+    // ========== 🆕 PASSO 6: GRAVAR NO FICHEIRO VALIDADO ==========
+    f = fopen("estacionamentos_validos.txt", "a");
+    
+    if (f == NULL) {
+        printf("❌ ERRO: Não foi possível abrir o ficheiro validado!\n");
+        return 0;
+    }
+    
+    // Gravar com o número validado e preço 0.00 (ainda não saiu)
+    fprintf(f, "%d %s %d %d %d %d %d %s %d %d %d %d %d %.2f\n",
+            novoEstac.numValidado,  // 🆕 Usar número validado
+            novoEstac.matricula,
+            novoEstac.anoE, novoEstac.mesE, novoEstac.diaE,
+            novoEstac.horaE, novoEstac.minE,
+            novoEstac.lugar,
+            novoEstac.anoS, novoEstac.mesS, novoEstac.diaS,
+            novoEstac.horaS, novoEstac.minS,
+            0.00);  // Preço zero porque ainda não saiu
+    
+    fclose(f);
+    
+    // ========== PASSO 7: MOSTRAR TICKET ==========
     printf("\n✅ Entrada registada com sucesso!\n");
     mostrarTicket(novoEstac);
     
     return 1;
 }
-
 
 // Função para inicializar o mapa (tudo livre)
 void InicializarMapa(Lugar mapa[][MAX_FILAS][MAX_LUGARES], Confparque config) {
@@ -458,15 +533,63 @@ void MostrarMapaOcupacao_ComMapa(Confparque config, char *ficheiroOcupacao,
 }
 
 // ============================================================
-// FUNÇÃO AUXILIAR: Mostrar ticket
+// FUNÇÃO AUXILIAR: Atribuir lugar automático
 // ============================================================
+char* atribuirLugar(Confparque config, char *ficheiroEstacionamentos) {
+    // Criar array para marcar lugares ocupados
+    static char lugarAtribuido[10];
+    int ocupados[MAX_PISOS][MAX_FILAS][MAX_LUGARES] = {0};
+    
+    // Ler ficheiro e marcar lugares ocupados
+    FILE *f = fopen(ficheiroEstacionamentos, "r");
+    if (f != NULL) {
+        estacionamento E;
+        float preco;
+        
+        while (fscanf(f, "%d %s %d %d %d %d %d %s %d %d %d %d %d %f",
+                      &E.numE, E.matricula,
+                      &E.anoE, &E.mesE, &E.diaE, &E.horaE, &E.minE,
+                      E.lugar,
+                      &E.anoS, &E.mesS, &E.diaS, &E.horaS, &E.minS,
+                      &preco) == 14)
+        {
+            // Se ainda não saiu (anoS = 0), marcar como ocupado
+            if (E.anoS == 0) {
+                int piso, fila, numero;
+                ProcessarLugar(E.lugar, &piso, &fila, &numero);
+                ocupados[piso-1][fila][numero-1] = 1;
+            }
+        }
+        fclose(f);
+    }
+    
+    // Procurar primeiro lugar livre (ordem: piso -> fila -> número)
+    for (int p = 0; p < config.numpisos; p++) {
+        for (int f = 0; f < config.numfilas; f++) {
+            for (int l = 0; l < config.numlugares; l++) {
+                if (ocupados[p][f][l] == 0) {
+                    // Encontrou lugar livre!
+                    sprintf(lugarAtribuido, "%d%c%d",
+                            p+1,           // Piso (1-5)
+                            'A' + f,       // Fila (A-Z)
+                            l+1);          // Número (1-50)
+                    return lugarAtribuido;
+                }
+            }
+        }
+    }
+    
+    // Sem lugares livres
+    return NULL;
+}
+
 void mostrarTicket(estacionamento E) {
     printf("\n");
-    printf("╔════════════════════════════════════════════════════════════╗\n");
+    printf("╔═══════════════════════════════════════════════════════════╗\n");
     printf("║              🎫 TICKET DE ESTACIONAMENTO                  ║\n");
-    printf("╠════════════════════════════════════════════════════════════╣\n");
+    printf("╠═══════════════════════════════════════════════════════════╣\n");
     printf("║                                                            ║\n");
-    printf("║  Nº Entrada: %-6d                                        ║\n", E.numE);
+    printf("║  Nº Entrada: %-6d                                        ║\n", E.numValidado);  
     printf("║  Matrícula:  %-10s                                      ║\n", E.matricula);
     printf("║                                                            ║\n");
     printf("║  📍 Lugar Atribuído: %-5s                                ║\n", E.lugar);
@@ -478,7 +601,7 @@ void mostrarTicket(estacionamento E) {
     printf("║                                                            ║\n");
     printf("║  ⚠️  Guarde este ticket para efetuar o pagamento!         ║\n");
     printf("║                                                            ║\n");
-    printf("╚════════════════════════════════════════════════════════════╝\n");
+    printf("╚═══════════════════════════════════════════════════════════╝\n");
 }
 
 // ============================================================
@@ -707,3 +830,37 @@ void mostrarRecibo(int numE, char *matricula, char *lugar,
     printf("║                                                           ║\n");
     printf("╚═══════════════════════════════════════════════════════════╝\n");
 }
+
+// ============================================================
+// FUNÇÃO AUXILIAR: Obter próximo número de entrada VALIDADO
+// ============================================================
+int obterProximoNumeroValidado(char *ficheiroValidado) {
+    FILE *f = fopen(ficheiroValidado, "r");
+    if (f == NULL) {
+        return 1; // Primeiro registo
+    }
+    
+    int ultimoNumValidado = 0;  // 🆕 Nome mais claro
+    int numLido;                 // 🆕 Variável temporária para ler o número
+    char matricula[MAX_MATRICULA];
+    int anoE, mesE, diaE, horaE, minE;
+    char lugar[MAX_LUGAR];
+    int anoS, mesS, diaS, horaS, minS;
+    float preco;
+    
+    while (fscanf(f, "%d %s %d %d %d %d %d %s %d %d %d %d %d %f",
+                  &numLido, matricula,           // 🆕 Lê o número validado
+                  &anoE, &mesE, &diaE, &horaE, &minE,
+                  lugar,
+                  &anoS, &mesS, &diaS, &horaS, &minS,
+                  &preco) == 14)
+    {
+        if (numLido > ultimoNumValidado) {      // 🆕 Compara com o número lido
+            ultimoNumValidado = numLido;
+        }
+    }
+    
+    fclose(f);
+    return ultimoNumValidado + 1;
+}
+

@@ -1,0 +1,1 @@
+Empresa: 123	Usuário: 32	Tamanho do parque 4 Pisos * 20 Filas * 32 Lugares	Quantidade de lugares totais: 2560
