@@ -1,11 +1,14 @@
 #include "GestaoLugares.h"
 #include "Estacionamento.h"
 #include "Tarifas.h"
+#include "validacoes.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define FICHEIRO_INDISPONIVEIS "lugares_indisponiveis.txt"
+
+
 
 void mostrarDetalhesEstacionamento(estacionamento E) {
     printf("\n");

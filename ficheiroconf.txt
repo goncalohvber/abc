@@ -1,0 +1,5 @@
+4 20 32
+# Configuracao do Parque de Estacionamento
+# Pisos: 4
+# Filas: 20 (A-T)
+# Lugares por fila: 32

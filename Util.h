@@ -9,5 +9,5 @@
 #define Util_h
 
 #include <stdio.h>
-void mostrarmenu(void);
+void mostrarMenu(void);
 #endif /* Util_h */
