@@ -7,6 +7,7 @@
 #include "Estacionamento.h"
 #include "Util.h"
 #include "Instalacao.h"
+#include "GestaoLugares.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -165,6 +166,7 @@ void mostrarMenu(void) {
         printf("\t||   [2] Registar Saída               ||\n");
         printf("\t||   [3] Mostrar Mapa                 ||\n");
         printf("\t||   [4] Reconfigurar Parque          ||\n");
+        printf("\t||   [5] Gestão de Lugares            ||\n");
         printf("\t||                                    ||\n");
         printf("\t||   ------------------------------   ||\n");
         printf("\t||   [0] Sair                         ||\n");
@@ -216,6 +218,10 @@ void mostrarMenu(void) {
                 Confparque config;
                 system("clear");
                 personalizapp(config);
+                break;
+
+           case 5:
+                menuGestaoLugares(config);
                 break;
         }
         
