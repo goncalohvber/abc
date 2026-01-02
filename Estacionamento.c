@@ -1,8 +1,3 @@
-//  Estacionamento.c
-//  ProjetoEstacionamento
-//
-//  Created by Gonçalo Henrique Viegas Bernardino on 11/12/2025.
-//
 #include <stdio.h>
 #include <stdlib.h>
 #include "Estacionamento.h"
@@ -24,6 +19,11 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
 
     if (f_og == NULL || f_val == NULL || f_err == NULL) {
         printf("Erro critico ao abrir ficheiros.\n");
+        
+        if (f_og != NULL) fclose(f_og);
+        if (f_val != NULL) fclose(f_val);
+        if (f_err != NULL) fclose(f_err);
+        
         return;
     }
 
@@ -43,7 +43,7 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
     
     printf("DEBUG: %d tarifas carregadas\n", numTarifas);
     
-    // 🆕 ADICIONAR: Array para rastrear matrículas no parque
+    // Array para rastrear matrículas no parque
     char matriculasNoParque[MAX_REG_EST][10];
     int numMatriculasNoParque = 0;
     
@@ -61,9 +61,9 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
         int tempovalido = validaEantesS(E.diaE, E.mesE, E.anoE, E.horaE, E.minE,
                                         E.diaS, E.mesS, E.anoS, E.horaS, E.minS);
         
-        // 🆕 ADICIONAR: Verificar se matrícula já está no parque
+        // Verificar se matrícula já está no parque
         int matriculaDuplicada = 0;
-        if (E.anoS == 0) {  // Se ainda não saiu
+        if (E.anoS == 0) {
             for (int i = 0; i < numMatriculasNoParque; i++) {
                 if (strcmp(matriculasNoParque[i], E.matricula) == 0) {
                     matriculaDuplicada = 1;
@@ -86,7 +86,7 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
                     E.anoS, E.mesS, E.diaS, E.horaS, E.minS,
                     precoPagar);
             
-            // 🆕 ADICIONAR: Se ainda não saiu, adicionar ao array
+            // Se ainda não saiu, adicionar ao array
             if (E.anoS == 0 && numMatriculasNoParque < MAX_REG_EST) {
                 strcpy(matriculasNoParque[numMatriculasNoParque], E.matricula);
                 numMatriculasNoParque++;
@@ -114,7 +114,6 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
             fprintf(f_err, "[ERRO] Linha %d | A Data de entrada é posterior à Data de saida. (Impossível)\n",
                     E.numE);
         }
-        // 🆕 ADICIONAR: Novo tipo de erro
         else if(matriculaDuplicada){
             fprintf(f_err, "[ERRO] Linha %d | Matricula: %s (Veículo já está no parque - entrada duplicada)\n",
                     E.numE, E.matricula);
@@ -124,6 +123,11 @@ void LimpaFicheiroEstac(char *ficheirobase, char *ficheirovalido, char *ficheiro
     fclose(f_og);
     fclose(f_val);
     fclose(f_err);
+    
+    printf("\n✅ Validação concluída:\n");
+    printf("   - Registos válidos: %d\n", novoID - 1);
+    printf("   - Ficheiro validado: %s\n", ficheirovalido);
+    printf("   - Relatório de erros: %s\n", ficheiroerros);
 }
 
 void MostrarFicheiroEstacionamento(char *nomeFicheiro)
@@ -476,7 +480,7 @@ void DesenharMapa(Lugar mapa[][MAX_FILAS][MAX_LUGARES], Confparque config) {
             
             for (int lugar = 0; lugar < config.numlugares; lugar++) {
                 char status = mapa[piso][fila][lugar].status;
-                
+                printf("%c  ", status);
             }
             printf("\n");
         }
@@ -487,8 +491,8 @@ void DesenharMapa(Lugar mapa[][MAX_FILAS][MAX_LUGARES], Confparque config) {
     printf("╔═══════════════════════════════════╗\n");
     printf("║            LEGENDA                ║\n");
     printf("╠═══════════════════════════════════╣\n");
-    printf("║  \033[1;32m-\033[0m  = Lugar Livre             ║\n");
-    printf("║  \033[1;31mX\033[0m  = Lugar Ocupado           ║\n");
+    printf("║  -  = Lugar Livre                 ║\n");
+    printf("║  X  = Lugar Ocupado               ║\n");
     printf("╚═══════════════════════════════════╝\n");
 }
 
@@ -589,7 +593,7 @@ void mostrarTicket(estacionamento E) {
     printf("║              🎫 TICKET DE ESTACIONAMENTO                  ║\n");
     printf("╠═══════════════════════════════════════════════════════════╣\n");
     printf("║                                                            ║\n");
-    printf("║  Nº Entrada: %-6d                                        ║\n", E.numValidado);  
+    printf("║  Nº Entrada: %-6d                                        ║\n", E.numValidado);
     printf("║  Matrícula:  %-10s                                      ║\n", E.matricula);
     printf("║                                                            ║\n");
     printf("║  📍 Lugar Atribuído: %-5s                                ║\n", E.lugar);
@@ -863,4 +867,3 @@ int obterProximoNumeroValidado(char *ficheiroValidado) {
     fclose(f);
     return ultimoNumValidado + 1;
 }
-
