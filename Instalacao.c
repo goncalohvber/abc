@@ -1,9 +1,3 @@
-//
-//  Funcs.c
-//  ProjetoEstacionamento
-//
-//  Created by Gonçalo Henrique Viegas Bernardino on 05/12/2025.
-//
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -129,4 +123,3 @@ int personalizapp(Confparque config) {
     }
         return 1;
 }
-
