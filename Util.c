@@ -166,6 +166,7 @@ void mostrarMenu(void) {
         printf("\t||   [3] Mostrar Mapa                 ||\n");
         printf("\t||   [4] Reconfigurar Parque          ||\n");
         printf("\t||   [5] Gestão de Lugares            ||\n");
+        printf("\t||   [6] Listagens                    ||\n");
         printf("\t||                                    ||\n");
         printf("\t||   ------------------------------   ||\n");
         printf("\t||   [0] Sair                         ||\n");
@@ -222,6 +223,11 @@ void mostrarMenu(void) {
            case 5:
                 menuGestaoLugares(config);
                 break;
+          
+          case 6:
+                menuListagens(config);
+                break;
+
         }
         
     }
