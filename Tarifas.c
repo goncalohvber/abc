@@ -1,9 +1,3 @@
-//
-//  Tarifas.c
-//  ProjetoEstacionamento
-//
-//  Created by Gonçalo Henrique Viegas Bernardino on 05/12/2025.
-//
 #include "Tarifas.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,19 +56,36 @@ void mostrarTabela(Tarifa tarifas[], int n) {
     }
     printf("------------------------------------------\n");}
 
-int lertarifas(Tarifa tarifas[], int *numtarifas) { //Ler o ficheiro criado "Tarifario.txt"
+int lertarifas(Tarifa tarifas[], int *numtarifas) {
     // Validar parâmetros
     if (tarifas == NULL || numtarifas == NULL) {
         return 0;
     }
-    printf("Tarifario.txt não encontrado.");
     
-    FILE *f = fopen("Tarifario.txt", "r"); //abrir ficheiro para leitura
+    // Só mostrar erro se o ficheiro NÃO existir
+    FILE *f = fopen("Tarifario.txt", "r");
     
     if (f == NULL) {
+        printf("  Tarifario.txt não encontrado. A criar ficheiro...\n");
+        
+        // Criar ficheiro com tarifas padrão
+        f = fopen("Tarifario.txt", "w");
+        if (f != NULL) {
+            fprintf(f, "H\tCT1\t08:00\t22:00\t1.50\n");
+            fprintf(f, "H\tCT2\t22:00\t08:00\t0.75\n");
+            fprintf(f, "D\tCT3\t00:00\t23:59\t5.00\n");
+            fprintf(f, "D\tCT4\t00:00\t23:59\t10.00\n");
+            fclose(f);
+            printf(" Tarifario.txt criado com valores padrão.\n");
+        } else {
+            printf(" Erro ao criar Tarifario.txt!\n");
+            return 0;
+        }
+        
+        // Reabrir para leitura
         f = fopen("Tarifario.txt", "r");
         if (f == NULL) {
-            printf("Não foi possível abrir o ficheiro após criação.\n");
+            printf(" Não foi possível abrir o ficheiro após criação.\n");
             return 0;
         }
     }
@@ -91,7 +102,8 @@ int lertarifas(Tarifa tarifas[], int *numtarifas) { //Ler o ficheiro criado "Tar
         if (strlen(linha) == 0) {
             continue;
         }
-        //variaveis temporararias
+        
+        // Variaveis temporarias
         char tipo;
         char codigo[10];
         int horaInf, minInf, horaSup, minSup;
@@ -100,18 +112,17 @@ int lertarifas(Tarifa tarifas[], int *numtarifas) { //Ler o ficheiro criado "Tar
                                &tipo, codigo, &horaInf, &minInf, &horaSup, &minSup, &valor);
         
         if (resultado != 7) {
-           
-            printf("Linha mal formatada: '%s'\n", linha);
+            printf("⚠️  Linha mal formatada: '%s'\n", linha);
             continue;
         }
         
         if (tipo != 'H' && tipo != 'D') {
-            printf("Tipo '%c' inválido\n", tipo);
+            printf("⚠️  Tipo '%c' inválido\n", tipo);
             continue;
         }
         
         if (valor <= 0) {
-            printf("Valor %.2f inválido\n", valor);
+            printf("⚠️  Valor %.2f inválido\n", valor);
             continue;
         }
         
@@ -129,11 +140,11 @@ int lertarifas(Tarifa tarifas[], int *numtarifas) { //Ler o ficheiro criado "Tar
     fclose(f);
     
     if (*numtarifas == 0) {
-        printf("Nenhuma tarifa válida foi carregada\n");
+        printf(" Nenhuma tarifa válida foi carregada\n");
         return 0;
     }
     
-    printf("%d tarifa(s) carregada(s) com sucesso.\n", *numtarifas);
+    printf(" %d tarifa(s) carregada(s) com sucesso.\n", *numtarifas);
     return 1;
 }
 
@@ -231,5 +242,3 @@ float CalcularPreco(int dE, int mE, int aE, int hE, int minE,
 
     return totalPagar;
 }
-
-
