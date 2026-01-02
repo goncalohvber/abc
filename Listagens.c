@@ -8,6 +8,7 @@
 #include "Listagens.h"
 #include "Tarifas.h"
 #include "validacoes.h"
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -157,13 +158,13 @@ void listarTodosEstacionamentos(char *ficheiroEstacionamentos) {
     }
 
     // Ler todos os registos
-    while (fscanf(f, "%d %s %d %d %d %d %d %s %d %d %d %d %d",
+    while (fscanf(f, "%d %s %d %d %d %d %d %s %d %d %d %d %d %f",
                   &est[numTotal].numE, est[numTotal].matricula,
                   &est[numTotal].anoE, &est[numTotal].mesE, &est[numTotal].diaE,
                   &est[numTotal].horaE, &est[numTotal].minE,
                   est[numTotal].lugar,
                   &est[numTotal].anoS, &est[numTotal].mesS, &est[numTotal].diaS,
-                  &est[numTotal].horaS, &est[numTotal].minS) == 13) {
+                  &est[numTotal].horaS, &est[numTotal].minS, &est[numTotal].valorPago) == 14) {
 
         // Calcular valor pago se já saiu
         if (est[numTotal].anoS != 0) {
@@ -685,7 +686,8 @@ void menuListagens(Confparque config) {
                 break;
 
             case 0:
-                printf("Voltando ao menu principal...\n");
+                
+                mostrarMenu();
                 break;
 
             default:
